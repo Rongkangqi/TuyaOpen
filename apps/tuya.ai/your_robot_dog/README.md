@@ -1,7 +1,7 @@
 English | [简体中文](./RAEDME_zh.md)
 
 # your_robot_dog
-[your_robot_dog](https://github.com/tuya/TuyaOpen/tree/master/apps/tuya.ai/your_robot_dog) is ported from the TuyaOS `tuyaos_demo_ai_toy` project based on TuyaOpen’s `your_char_bot`. It adds vivid robot-dog facial expression changes and servo-controlled actions, bringing an open-source LLM-powered smart-chat robot dog to TuyaOpen. It captures voice through a microphone, performs speech recognition, and enables conversation, interaction, and teasing. You can also see emotion changes on the screen and observe interactive behaviors.
+[your_robot_dog](https://github.com/tuya/TuyaOpen/tree/master/apps/tuya.ai/your_robot_dog) is ported from the TuyaOS `tuyaos_demo_ai_toy` project to TuyaOpen based on `your_char_bot`. It adds vivid robot-dog expression changes and servo-controlled actions, bringing an open-source LLM-powered smart-chat robot dog to TuyaOpen. Audio is captured through a microphone and transcribed by ASR to enable conversation, interaction, and playful banter. Emotion changes and interactive behaviors are also shown on the screen.
 
 ![](./img/robot_dog.png)
 
@@ -9,7 +9,7 @@ English | [简体中文](./RAEDME_zh.md)
 1. AI smart conversation
 2. Key wake / voice wake; turn-based dialog; supports voice interruption (hardware-dependent)
 3. Expression display
-4. Supports LCD to show chat content in real time; supports viewing chat content in real time on the app
+4. Supports LCD to display chat content in real time; supports viewing chat content in real time from the app
 5. Switch AI agent roles in real time from the app
 6. Voice control for robot-dog behaviors
 
@@ -33,7 +33,7 @@ To view serial logs:
 TX  -------------- RX_L
 RX  -------------- TX_L
 GND -------------- GND
-Make sure they share a common ground, otherwise logs may appear garbled.
+Make sure they share a common ground; otherwise logs may appear garbled.
 
 ## Build
 1. Run `tos.py config choice` and select `TUYA_T5AI_ROBOT_DOG.config`.
@@ -77,7 +77,7 @@ Make sure they share a common ground, otherwise logs may appear garbled.
 
 - **Wake word**
 
-	This option only appears when the chat mode is **Wake-word mode** or **Free chat**.
+	This option appears only when the chat mode is **Wake-word mode** or **Free chat**.
 
 	| Macro | Type | Description |
 	| --- | --- | --- |
@@ -122,23 +122,46 @@ The following options appear only after display is enabled.
 
 Required: some robot-dog expression GIFs have been packed into a LittleFS image at `./src/display/emotion/fs/fs.bin`. You must flash it to the specified address in FLASH.
 
-If not configured, the system may access an invalid address (symptom: reboot loop) or the dog expressions may be incomplete.
+If you do not configure this, it may cause abnormal reboots or incomplete dog-expression rendering.
 
 Steps:
-1. Download BKFIL (Beken FLASH Image Loader), Armino’s official flashing/configuration tool.
-2. In BKFIL, select the flashing serial port in “选择串口”, and choose the `fs.bin` path in “Bin文件路径”.
+1. Download TuyaOpen’s official flashing tool TyuTool. TyuTool is a cross-platform serial tool designed for IoT developers, used to flash and read firmware on various mainstream chips.
+2. Open TyuTool, select “Write” in “Operate”, and select the `fs.bin` path in “File In”.
+3. In “Start”, configure the start address for `fs.bin` to `0x6cb000`, then click the “Start” button at the bottom to begin flashing.
 
-![](./img/BKFIL_1.png)
+![](./img/TyaTool_1.png)
 
-3. Open the “配置” page. In the `fs.bin` row, set start address to `0x6cb000` and file length to `0x100000`.
+4. If it looks like the figure below, flashing is successful.
 
-![](./img/BKFIL_2.png)
+![](./img/TyaTool_2.png)
 
-4. Go back to the main page and click flash/program.
+#### How to generate fs.bin yourself (optional)
+
+If you want to add/remove expressions, you can re-pack locally:
+
+1. Prepare GIFs  
+   Rename your expression files to:
+   `angry.gif confused.gif disappointed.gif embarrassed.gif happy.gif laughing.gif relaxed.gif sad.gif happy.gif surprise.gif thinking.gif `
+   and place them all in an empty directory, for example `/tmp/gif_pack`.
+   Notes: the total size of all GIFs must be < 1 MB. The device code loads them via absolute paths like `/angry.gif`, so the filenames must match what the code expects.
+
+2. One-command packing  
+   Use the `mklittlefs` tool. Usage instructions are at `TuyaOpen/platform/T5AI/t5_os/ap/components/littlefs/mkimg/README.md`.
+   From the TuyaOpen repository root, run:
+
+   platform/T5AI/t5_os/ap/components/littlefs/mkimg/mklittlefs \
+     -c /tmp/gif_pack \
+     -b 4096 -p 256 -s 1048576 \
+     apps/tuya.ai/your_robot_dog/fs.bin
+
+	After the command completes, you will see the generated `fs.bin` under `apps/tuya.ai/your_robot_dog`.
+
+	Parameter meaning:
+	-c source directory  -b block size  -p page size  -s total image size (1 MB)
 
 ## Additional Notes
 `your_robot_dog` is a ported project. The baseboard for `TUYA_T5AI_ROBOT_DOG` differs significantly from a standard T5AI dev board.
 
- Audio playback and camera functions are not yet supported.
+Audio playback and camera functions are not yet supported.
 
 
