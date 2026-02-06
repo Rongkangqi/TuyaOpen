@@ -1,28 +1,23 @@
 ##
 # @file CMakeLists.txt
-# @brief 
+# @brief Raspberry Pi board configuration
 #/
 
-if (CONFIG_ENABLE_BUTTON STREQUAL "y")
 # MODULE_PATH
-set(MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR})
+set(MODULE_PATH ${CMAKE_CURRENT_LIST_DIR})
 
 # MODULE_NAME
-get_filename_component(MODULE_NAME ${MODULE_PATH} NAME)
+set(MODULE_NAME "Raspberry_Pi")
 
 # LIB_SRCS
-file(GLOB_RECURSE LIB_SRCS 
-    "${MODULE_PATH}/tdl_button/src/*.c")
-
-if (CONFIG_ENABLE_GPIO STREQUAL "y" AND (NOT DEFINED CONFIG_ENABLE_KEYBOARD_INPUT OR CONFIG_ENABLE_KEYBOARD_INPUT STREQUAL "n"))
-    list(APPEND LIB_SRCS ${MODULE_PATH}/tdd_button/src/tdd_button_gpio.c)
-endif()
+# set(LIB_SRCS
+#     ${MODULE_PATH}/board_com_api.c
+#     ${MODULE_PATH}/keyboard_input.c
+# )
+file(GLOB_RECURSE LIB_SRCS "${MODULE_PATH}/*.c")
 
 # LIB_PUBLIC_INC
-set(LIB_PUBLIC_INC 
-        ${MODULE_PATH}/tdl_button/include
-        ${MODULE_PATH}/tdd_button/include
-    )
+set(LIB_PUBLIC_INC ${MODULE_PATH})
 
 
 ########################################
@@ -43,6 +38,12 @@ target_include_directories(${MODULE_NAME}
         ${LIB_PUBLIC_INC}
     )
 
+# Link ALSA library if ALSA support is enabled
+if (CONFIG_ENABLE_AUDIO_ALSA STREQUAL "y")
+    target_link_libraries(${MODULE_NAME} PUBLIC asound)
+    message(STATUS "Raspberry Pi board: Linking ALSA library")
+endif()
+
 
 ########################################
 # Layer Configure
@@ -52,4 +53,3 @@ set(COMPONENT_LIBS "${COMPONENT_LIBS}" PARENT_SCOPE)
 list(APPEND COMPONENT_PUBINC ${LIB_PUBLIC_INC})
 set(COMPONENT_PUBINC "${COMPONENT_PUBINC}" PARENT_SCOPE)
 
-endif()
