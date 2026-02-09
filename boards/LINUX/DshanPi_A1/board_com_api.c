@@ -16,6 +16,10 @@
 #include "tdd_audio_alsa.h"
 #endif
 
+#if defined(ENABLE_AUDIO_PULSE) && (ENABLE_AUDIO_PULSE == 1)
+#include "tdd_audio_pulse.h"
+#endif
+
 #if defined(ENABLE_KEYBOARD_INPUT) && (ENABLE_KEYBOARD_INPUT == 1)
 #include "tdd_button_keyboard.h"
 #endif
@@ -55,8 +59,60 @@ static OPERATE_RET __board_register_audio(void)
 {
     OPERATE_RET rt = OPRT_OK;
 
-#if defined(ENABLE_AUDIO_ALSA) && (ENABLE_AUDIO_ALSA == 1)
-    #if defined(AUDIO_CODEC_NAME)
+#if defined(AUDIO_CODEC_NAME)
+    #if defined(ENABLE_AUDIO_PULSE) && (ENABLE_AUDIO_PULSE == 1)
+
+        PR_INFO("Registering PulseAudio audio device: %s", AUDIO_CODEC_NAME);
+
+        // Configure Pulse audio parameters
+        TDD_AUDIO_PULSE_CFG_T pulse_cfg = {0};
+        pulse_cfg.app_name = "TuyaAudioApp";
+        // Use default ALSA device names (configurable via Kconfig)
+        #if defined(PULSE_DEVICE_CAPTURE)
+            strncpy(pulse_cfg.capture_device, PULSE_DEVICE_CAPTURE, sizeof(pulse_cfg.capture_device) - 1);
+        #else
+            pulse_cfg.capture_device = NULL;  // Default input device
+        #endif
+
+        #if defined(PULSE_DEVICE_PLAYBACK)
+            strncpy(pulse_cfg.playback_device, PULSE_DEVICE_PLAYBACK, sizeof(pulse_cfg.playback_device) - 1);
+        #else
+            pulse_cfg.playback_device = NULL; // Default output device
+        #endif
+
+        pulse_cfg.sample_rate = TDD_ALSA_SAMPLE_16000;
+        pulse_cfg.spk_sample_rate = TDD_ALSA_SAMPLE_16000;
+        pulse_cfg.channels = TDD_ALSA_CHANNEL_MONO;
+        pulse_cfg.data_bits = TDD_PULSE_DATABITS_16;
+
+        #if defined(PULSE_PERIOD_FRAMES)
+            pulse_cfg.period_frames = PULSE_PERIOD_FRAMES;
+        #else
+            pulse_cfg.period_frames = 160;
+        #endif
+
+        #if defined(PULSE_BUFFER_FRAMES)
+            pulse_cfg.buffer_frames = PULSE_BUFFER_FRAMES;
+        #else
+            pulse_cfg.buffer_frames = 1024;
+        #endif
+        // Register the PULSE audio driver
+        rt = tdd_audio_pulse_register(AUDIO_CODEC_NAME, pulse_cfg);
+        if (OPRT_OK != rt) {
+            PR_WARN("Failed to register PULSE audio driver: %d", rt);
+            PR_WARN("This is expected on Raspberry Pi systems without audio hardware");
+            PR_WARN("Application will continue without audio functionality");
+            return rt;
+        }
+        PR_INFO("PULSE audio device registered successfully");
+        PR_INFO("  Capture device: %s", pulse_cfg.capture_device);
+        PR_INFO("  Playback device: %s", pulse_cfg.playback_device);
+        PR_INFO("  Sample rate: %d Hz", pulse_cfg.sample_rate);
+        PR_INFO("  Channels: %d", pulse_cfg.channels);
+        PR_INFO("  Bit depth: %d bits", pulse_cfg.data_bits);
+
+    #elif defined(ENABLE_AUDIO_ALSA) && (ENABLE_AUDIO_ALSA == 1)
+
         PR_INFO("Registering ALSA audio device: %s", AUDIO_CODEC_NAME);
 
         // Configure ALSA audio parameters
@@ -72,7 +128,7 @@ static OPERATE_RET __board_register_audio(void)
         #if defined(ALSA_DEVICE_PLAYBACK)
             strncpy(alsa_cfg.playback_device, ALSA_DEVICE_PLAYBACK, sizeof(alsa_cfg.playback_device) - 1);
         #else
-            strncpy(alsa_cfg.playback_device, "speaker_r", sizeof(alsa_cfg.playback_device) - 1);
+            strncpy(alsa_cfg.playback_device, "plughw:0,0", sizeof(alsa_cfg.playback_device) - 1);
         #endif
 
         // Audio format configuration

@@ -39,6 +39,12 @@ target_include_directories(${MODULE_NAME}
     )
 
 # Link ALSA library if ALSA support is enabled
+if (CONFIG_ENABLE_AUDIO_PULSE STREQUAL "y")
+    target_link_libraries(${MODULE_NAME} PUBLIC asound)
+    message(STATUS "Raspberry Pi board: Linking ALSA library")
+endif()
+
+# Link ALSA library if ALSA support is enabled
 if (CONFIG_ENABLE_AUDIO_ALSA STREQUAL "y")
     target_link_libraries(${MODULE_NAME} PUBLIC asound)
     message(STATUS "Raspberry Pi board: Linking ALSA library")
